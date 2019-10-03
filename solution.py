@@ -177,19 +177,37 @@ class AE():
         # Note: here for the network with weights sharing. Basically you need to follow the
         # formula (WW^TX) in the note at http://people.tamu.edu/~sji/classes/PCA.pdf .
         w1 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
-        #b1 = tf.Variable(tf.zeros(self.d_hidden_rep))
         encoder = tf.matmul(tf.transpose(w1), X)
         decoder = tf.matmul(w1, encoder)
         self.w = w1
 
+
         # Note: here for the network without weights sharing 
         '''w1 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
         w2 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
-        # b1 = tf.Variable(tf.zeros(self.d_hidden_rep))
         encoder = tf.matmul(tf.transpose(w1), X)
-        decoder = tf.matmul(w2, encoder)'''
+        decoder = tf.matmul(w2, encoder)
+        self.w = w1'''
 
         # Note: here for the network with more layers and nonlinear functions
+        '''w1 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
+        w2 = tf.Variable(initializer([self.d_hidden_rep, self.d_hidden_rep]), dtype=tf.float32)
+        #w3 = tf.Variable(initializer([self.d_hidden_rep, self.d_hidden_rep]), dtype=tf.float32)
+        
+        hidden_1 = tf.nn.relu(tf.matmul(tf.transpose(w1), X))
+        hidden_2 = tf.nn.relu(tf.matmul(tf.transpose(w2), hidden_1))
+        #hidden_3 = tf.nn.relu(tf.matmul(tf.transpose(w3), hidden_2))
+
+        #decoder_1 = tf.nn.relu(tf.matmul(w3, hidden_3))
+        decoder_1 = tf.nn.relu(tf.matmul(w2, hidden_2))
+        decoder = tf.nn.relu(tf.matmul(w1, decoder_1))
+        self.w = w1'''
+
+
+        # The following section does not share weight, not part of the submission
+        '''X_t = tf.transpose(X)
+        hidden_1 = tf.layers.dense(X_t, self.d_hidden_rep, tf.nn.relu,name='hidden_1')
+        decoder = tf.layers.dense(hidden_1, self.n_features, tf.nn.relu)'''
 
         self.out_layer = decoder
         ### END YOUR CODE

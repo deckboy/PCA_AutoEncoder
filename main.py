@@ -33,10 +33,16 @@ if __name__ == '__main__':
 
     ### YOUR CODE HERE
     # Note: You are free to modify your code here for debugging and justifying your ideas for 5(f)
-    ps = [32, 64, 128]
+    '''ps = [32, 64, 128]
     for p in ps:
         G = test_pca(p)
         final_w = test_ae(p)
+
+        g_w = frobeniu_norm_error(G, final_w)
+        print('for {}, the G-W norm is {} '.format(p,g_w))'''
+    # hyper parameter tuning
+    p = 64
+    final_w = test_ae(p)
     ### END YOUR CODE 
 
     
