@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import pickle, tqdm, os, time
+
 '''
 Homework2: Principal Component Analysis and Autoencoders
 
@@ -27,6 +28,7 @@ tf.nn.sigmoid
 tf.nn.tanh
 '''
 
+
 class PCA():
     '''
     Important!! Read before starting.
@@ -34,6 +36,7 @@ class PCA():
     we set the input shape to be [256, n_samples].
     2. According to the note, input matrix X should be centered before doing SVD
     '''
+
     def __init__(self, X, n_components):
         '''
         Args:
@@ -45,7 +48,6 @@ class PCA():
         self.X = X
         self.Up, self.Xp = self._do_pca()
 
-    
     def _do_pca(self):
         '''
         To do PCA decomposition.
@@ -54,13 +56,13 @@ class PCA():
             Xp: The reduced data matrix after PCA of shape [n_components, n_samples].
         '''
         ### YOUR CODE HERE
-        n = self.X.shape[1] #number of samples
+        n = self.X.shape[1]  # number of samples
         x_mean = np.mean(self.X, axis=1)
         x_mean_matrix = np.outer(x_mean, np.ones(n))
         x_tilda = self.X - x_mean_matrix
-        _u,_s,_vh = np.linalg.svd(x_tilda)
-        Up = _u[:,:self.n_components]
-        Xp = np.matmul(Up.T,self.X)
+        _u, _s, _vh = np.linalg.svd(x_tilda)
+        Up = _u[:, :self.n_components]
+        Xp = np.matmul(Up.T, self.X)
         ### END YOUR CODE
         return Up, Xp
 
@@ -106,7 +108,7 @@ def frobeniu_norm_error(A, B):
     Return: 
     error: the Frobenius norm's square of the matrix A-B. A scaler number.
     '''
-    return np.linalg.norm(A-B)
+    return np.linalg.norm(A - B)
 
 
 class AE():
@@ -122,12 +124,13 @@ class AE():
     as you can.
 
     '''
+
     def __init__(self, sess, d_hidden_rep):
         '''
         Args:
             sess: tf.Session. A Tensorflow session.
-            d_hidden_rep: The dimension for the hidden representation in AE. A scaler number.
-            n_features: The number of initial features, 256 for this dataset.
+            d_hidden_rep: The dimension for the hidden representation in AE. A scalar number.
+            n_features: The number of initial features, 256 for this data set.
             
         Attributes:
             X: Tensor of shape [256, None]. A placeholder 
@@ -141,10 +144,9 @@ class AE():
         self.n_features = 256
         self.X = tf.placeholder(tf.float32, shape=(self.n_features, None))
         self.out_layer = self._network(self.X)
-        
+
     def _network(self, X):
         '''
-
         You are free to use the listed functions and APIs from tf.layers or tf.nn:
             tf.Variable
             tf.matmul
@@ -164,7 +166,6 @@ class AE():
             
         '''
         initializer = tf.variance_scaling_initializer()
-        
         ### YOUR CODE HERE
 
         '''
@@ -175,18 +176,25 @@ class AE():
 
         # Note: here for the network with weights sharing. Basically you need to follow the
         # formula (WW^TX) in the note at http://people.tamu.edu/~sji/classes/PCA.pdf .
-
+        w1 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
+        #b1 = tf.Variable(tf.zeros(self.d_hidden_rep))
+        encoder = tf.matmul(tf.transpose(w1), X)
+        decoder = tf.matmul(w1, encoder)
+        self.w = w1
 
         # Note: here for the network without weights sharing 
+        '''w1 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
+        w2 = tf.Variable(initializer([self.n_features, self.d_hidden_rep]), dtype=tf.float32)
+        # b1 = tf.Variable(tf.zeros(self.d_hidden_rep))
+        encoder = tf.matmul(tf.transpose(w1), X)
+        decoder = tf.matmul(w2, encoder)'''
 
+        # Note: here for the network with more layers and nonlinear functions
 
-        # Note: here for the network with more layers and nonlinear functions  
-
-
+        self.out_layer = decoder
         ### END YOUR CODE
         return self.out_layer
-    
-    
+
     def _setup(self):
         '''
         Model and training setup.
@@ -200,43 +208,42 @@ class AE():
             train_op: An Operation that updates the variables.
         '''
         self.loss = tf.reduce_mean(
-            tf.square(self.out_layer-self.X))
+            tf.square(self.out_layer - self.X))
         self.optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
- 
+
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         with tf.control_dependencies(update_ops):
             self.train_op = self.optimizer.minimize(self.loss)
 
-    
     def train(self, x_train, x_valid, batch_size, max_epoch):
 
         '''
         Autoencoder is an unsupervised learning method. To compare with PCA,
         it's ok to use the whole training data for validation and reconstruction.
         '''
- 
+
         self._setup()
         self.sess.run(tf.global_variables_initializer())
- 
+
         num_samples = x_train.shape[1]
         num_batches = int(num_samples / batch_size)
- 
+
         num_valid_samples = x_valid.shape[1]
         num_valid_batches = (num_valid_samples - 1) // batch_size + 1
 
         print('---Run...')
         for epoch in range(1, max_epoch + 1):
- 
+
             # To shuffle the data at the beginning of each epoch.
             shuffle_index = np.random.permutation(num_samples)
             curr_x_train = x_train[:, shuffle_index]
- 
+
             # To start training at current epoch.
             loss_value = []
             qbar = tqdm.tqdm(range(num_batches))
             for i in qbar:
                 batch_start_time = time.time()
- 
+
                 start = batch_size * i
                 end = batch_size * (i + 1)
                 x_batch = curr_x_train[:, start:end]
@@ -249,7 +256,7 @@ class AE():
                     qbar.set_description(
                         'Epoch {:d} Loss {:.6f}'.format(
                             epoch, loss))
- 
+
             # To start validation at the end of each epoch.
             loss = 0
             print('Doing validation...', end=' ')
@@ -257,12 +264,11 @@ class AE():
                 start = batch_size * i
                 end = min(batch_size * (i + 1), x_valid.shape[1])
                 x_valid_batch = x_valid[:, start:end]
- 
+
                 feed_dict = {self.X: x_valid_batch}
                 loss += self.sess.run(self.loss, feed_dict=feed_dict)
- 
+
             print('Validation Loss {:.6f}'.format(loss))
- 
 
     def get_params(self):
         """
@@ -273,7 +279,7 @@ class AE():
         """
         final_w = self.sess.run(self.w)
         return final_w
-    
+
     def reconstruction(self, X):
         '''
         To reconstruct data. You’re required to reconstruct one by one here,
@@ -283,19 +289,21 @@ class AE():
         Returns:
             X_re: The reconstructed data matrix, which has the same shape as X.
         '''
-        _, n_samples = X.shape
-        for i in range(n_samples): 
+        n_features, n_samples = X.shape
+        for i in range(n_samples):
             ### YOUR CODE HERE
-
             # Note: Format input curr_X to the shape [n_features, 1]
-  
-            ### END YOUR CODE            
-            feed_dict={
-                self.X: np.array(curr_X)}
+            curr_X = X[:, i].reshape([n_features, 1])
+            ### END YOUR CODE
+
+            feed_dict = {self.X: np.array(curr_X)}
             curr_recons = self.sess.run(self.out_layer, feed_dict=feed_dict)
             ### YOUR CODE HERE
-
+            if i == 0:
+                X_re = curr_recons
+            else:
+                X_re = np.hstack((X_re, curr_recons))
             # Note: To achieve final reconstructed data matrix with the shape [n_features, n_any].
-  
-        ### END YOUR CODE 
+
+            ### END YOUR CODE
         return X_re

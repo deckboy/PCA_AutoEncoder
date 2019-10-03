@@ -1,6 +1,6 @@
 import tensorflow as tf
 from helper import load_data
-from solution import PCA, frobeniu_norm_error #, AE
+from solution import PCA, frobeniu_norm_error , AE
 import numpy as np
 import os
 
@@ -33,10 +33,10 @@ if __name__ == '__main__':
 
     ### YOUR CODE HERE
     # Note: You are free to modify your code here for debugging and justifying your ideas for 5(f)
-    ps = [50, 100, 256]
+    ps = [32, 64, 128]
     for p in ps:
         G = test_pca(p)
-        #final_w = test_ae(p)
+        final_w = test_ae(p)
     ### END YOUR CODE 
 
     
